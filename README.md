@@ -1,6 +1,6 @@
 # CS 2200 Bookings
 
-[![Vercel Deployment](https://vercel.com/api/badges/sswadkars-projects/cs2200bookings/status)](https://vercel.com/sswadkars-projects/cs2200bookings)
+[![Vercel Deployment](https://vercelbadge.vercel.app/api//sswadkar/cs2200bookings)](https://vercelbadge.vercel.app/api//sswadkar/cs2200bookings)
 
 **Live:** https://cs2200bookings.vercel.app
 
