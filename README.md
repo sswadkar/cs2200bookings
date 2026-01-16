@@ -1,4 +1,8 @@
-# CS2200 Bookings
+# CS 2200 Bookings
+
+[![Vercel Deployment](https://vercel.com/api/badges/sswadkar/cs2200bookings/status)](https://vercel.com/sswadkar/cs2200bookings)
+
+**Live:** https://cs2200bookings.vercel.app
 
 A comprehensive booking system for Georgia Tech's CS2200 course, enabling students to schedule office hours with Teaching Assistants (TAs), while providing administrators with tools to manage groups, slots, and users.
 
