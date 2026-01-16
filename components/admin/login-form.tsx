@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import Link from "next/link"
 
 export function AdminLoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +65,50 @@ export function AdminLoginForm() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Please enter your email address first")
+      return
+    }
+
+    setIsResettingPassword(true)
+
+    try {
+      const supabase = createClient()
+
+      // Check if user is an admin first
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("email", email.toLowerCase().trim())
+        .single()
+
+      if (!admin) {
+        toast.error("No admin account found with this email")
+        return
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL
+          ? `${process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL}/auth/reset-password?role=admin`
+          : `${window.location.origin}/auth/reset-password?role=admin`,
+      })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      toast.success("Password reset email sent!", {
+        description: "Check your inbox for a link to reset your password.",
+      })
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
   return (
     <Card className="border-border">
       <form onSubmit={handleSubmit}>
@@ -80,7 +126,17 @@ export function AdminLoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={isResettingPassword}
+                className="text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                {isResettingPassword ? "Sending..." : "Forgot password?"}
+              </button>
+            </div>
             <Input
               id="password"
               type="password"
@@ -92,8 +148,8 @@ export function AdminLoginForm() {
             />
           </div>
         </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full mt-4" disabled={isLoading}>
+        <CardFooter className="flex flex-col gap-4">
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -103,6 +159,12 @@ export function AdminLoginForm() {
               "Sign In"
             )}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            First time?{" "}
+            <Link href="/auth/set-password?role=admin" className="text-primary hover:underline">
+              Set up your password
+            </Link>
+          </p>
         </CardFooter>
       </form>
     </Card>

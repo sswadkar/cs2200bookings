@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
+import Link from "next/link"
 
 export function TALoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -72,6 +74,46 @@ export function TALoginForm() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Please enter your email address first")
+      return
+    }
+
+    setIsResettingPassword(true)
+
+    try {
+      const supabase = createClient()
+
+      // Check if user is a TA first
+      const { data: ta } = await supabase.from("tas").select("id").eq("email", email.toLowerCase().trim()).single()
+
+      if (!ta) {
+        toast.error("No TA account found with this email")
+        return
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL
+          ? `${process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL}/auth/reset-password?role=ta`
+          : `${window.location.origin}/auth/reset-password?role=ta`,
+      })
+
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+
+      toast.success("Password reset email sent!", {
+        description: "Check your inbox for a link to reset your password.",
+      })
+    } catch {
+      toast.error("An unexpected error occurred")
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
@@ -86,7 +128,17 @@ export function TALoginForm() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            disabled={isResettingPassword}
+            className="text-sm text-primary hover:underline disabled:opacity-50"
+          >
+            {isResettingPassword ? "Sending..." : "Forgot password?"}
+          </button>
+        </div>
         <Input
           id="password"
           type="password"
@@ -99,6 +151,12 @@ export function TALoginForm() {
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Signing in..." : "Sign In"}
       </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        First time?{" "}
+        <Link href="/auth/set-password?role=ta" className="text-primary hover:underline">
+          Set up your password
+        </Link>
+      </p>
     </form>
   )
 }
