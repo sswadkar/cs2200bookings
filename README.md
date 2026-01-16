@@ -31,12 +31,14 @@ A comprehensive booking system for Georgia Tech's CS2200 course, enabling studen
 ## Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd cs2200bookings
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
@@ -44,6 +46,7 @@ A comprehensive booking system for Georgia Tech's CS2200 course, enabling studen
 3. **Set up environment variables**
 
    Create a `.env.local` file in the root directory with the following variables:
+
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -52,7 +55,6 @@ A comprehensive booking system for Georgia Tech's CS2200 course, enabling studen
 4. **Database Setup**
 
    Run the SQL scripts in the `scripts/` directory in order to set up your Supabase database:
-
    - `001-create-tables.sql`: Creates the initial database schema
    - `002-enable-rls.sql`: Enables Row Level Security
    - `003-seed-data.sql`: Seeds initial data
@@ -68,12 +70,15 @@ A comprehensive booking system for Georgia Tech's CS2200 course, enabling studen
 ## Usage
 
 1. **Development**
+
    ```bash
    pnpm dev
    ```
+
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 2. **Build for production**
+
    ```bash
    pnpm build
    pnpm start
@@ -112,7 +117,3 @@ A comprehensive booking system for Georgia Tech's CS2200 course, enabling studen
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
-
-## License
-
-This project is private and proprietary.
