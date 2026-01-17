@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import type { Admin, BookingGroup, BookingSlot, Booking, TAWithStats, Student } from "@/lib/types"
 import { CreateSlotDialog } from "./create-slot-dialog"
-import { formatRelativeTime, formatPlainDate, formatPlainTime } from "@/lib/utils/date"
+import { formatRelativeTime, formatPlainDate, formatPlainTime, formatDate, formatTime } from "@/lib/utils/date"
 
 interface ManageBookingGroupProps {
   admin: Admin
@@ -357,9 +357,9 @@ export function ManageBookingGroup({
                           className="flex items-center justify-between rounded-lg border border-border p-4"
                         >
                           <div>
-                            <p className="font-medium text-foreground">{formatPlainDate(slot.start_time)}</p>
+                            <p className="font-medium text-foreground">{formatDate(slot.start_time)}</p>
                             <p className="text-sm text-muted-foreground">
-                              {formatPlainTime(slot.start_time)} - {formatPlainTime(slot.end_time)}
+                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
                               {currentBookings} / {slot.capacity} booked
@@ -396,7 +396,7 @@ export function ManageBookingGroup({
                         >
                           <div>
                             <p className="text-sm text-foreground">
-                              {formatPlainDate(slot.start_time)} at {formatPlainTime(slot.start_time)}
+                              {formatDate(slot.start_time)} at {formatTime(slot.start_time)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {currentBookings} bookings{slot.ta && ` • TA: ${slot.ta.name}`}
@@ -449,8 +449,7 @@ export function ManageBookingGroup({
                           <p className="font-medium text-foreground">{booking.student?.name}</p>
                           <p className="text-sm text-muted-foreground">{booking.student?.email}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {formatPlainDate(booking.slot?.start_time || "")} at{" "}
-                            {formatPlainTime(booking.slot?.start_time || "")}
+                            {formatDate(booking.slot?.start_time || "")} at {formatTime(booking.slot?.start_time || "")}
                             {booking.booked_at && ` • Booked ${formatRelativeTime(booking.booked_at)}`}
                           </p>
                         </div>

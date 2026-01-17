@@ -62,7 +62,7 @@ export default function TASlotManagementPage() {
   const maxTime = group?.daily_end_time?.slice(0, 5) || "23:59"
 
   const isEditable = group?.status === "hidden"
-  const isPublished = group?.status === "published"
+  const isViewMode = group?.status === "published" || group?.status === "locked"
 
   useEffect(() => {
     checkAuth()
@@ -129,7 +129,7 @@ export default function TASlotManagementPage() {
       .eq("ta_id", taId)
       .order("start_time")
 
-    if (slotsData && groupData.status === "published") {
+    if (slotsData && (groupData.status === "published" || groupData.status === "locked")) {
       // Fetch bookings for each slot
       const slotIds = slotsData.map((s) => s.id)
       const { data: bookingsData } = await supabase
@@ -369,7 +369,7 @@ export default function TASlotManagementPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant={isPublished ? "default" : "secondary"}>
+            <Badge variant={isViewMode ? "default" : "secondary"}>
               {group.status.charAt(0).toUpperCase() + group.status.slice(1)}
             </Badge>
             <Badge variant="outline">
@@ -378,7 +378,7 @@ export default function TASlotManagementPage() {
           </div>
         </div>
 
-        {isPublished && (
+        {isViewMode && (
           <div className="mt-6 grid gap-4 sm:grid-cols-4">
             <Card>
               <CardContent className="pt-6">
@@ -550,11 +550,11 @@ export default function TASlotManagementPage() {
           </Card>
         )}
 
-        {isPublished && (
+        {isViewMode && (
           <div className="mt-8 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
             <Info className="h-4 w-4 shrink-0" />
             <span>
-              This booking group is published. You can view your slots and see which students have booked, but you
+              This booking group is {group.status}. You can view your slots and see which students have booked, but you
               cannot modify slots.
             </span>
           </div>
@@ -586,7 +586,7 @@ export default function TASlotManagementPage() {
                           <div
                             key={slot.id}
                             className={`rounded-lg border bg-card p-4 ${
-                              isPublished && isFull
+                              isViewMode && isFull
                                 ? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950"
                                 : "border-border"
                             }`}
@@ -597,7 +597,7 @@ export default function TASlotManagementPage() {
                                 <span className="font-medium text-card-foreground">
                                   {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
                                 </span>
-                                {isPublished && (
+                                {isViewMode && (
                                   <Badge variant={isFull ? "default" : hasBookings ? "secondary" : "outline"}>
                                     {bookingCount} / {slot.capacity} booked
                                   </Badge>
@@ -633,7 +633,7 @@ export default function TASlotManagementPage() {
                               )}
                             </div>
 
-                            {isPublished && slot.bookings && slot.bookings.length > 0 && (
+                            {isViewMode && slot.bookings && slot.bookings.length > 0 && (
                               <div className="mt-3 border-t border-border pt-3">
                                 <p className="mb-2 flex items-center gap-1 text-sm font-medium text-muted-foreground">
                                   <Users className="h-3 w-3" />
@@ -654,7 +654,7 @@ export default function TASlotManagementPage() {
                               </div>
                             )}
 
-                            {isPublished && (!slot.bookings || slot.bookings.length === 0) && (
+                            {isViewMode && (!slot.bookings || slot.bookings.length === 0) && (
                               <div className="mt-3 border-t border-border pt-3">
                                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                                   <XCircle className="h-3 w-3" />
