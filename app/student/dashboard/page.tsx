@@ -119,13 +119,6 @@ export default function StudentDashboardPage() {
                             : "Time TBD"}
                         </span>
                       </div>
-                      {!isLocked && (
-                        <Link href={`/student/book/${booking.slot?.booking_group?.slug}`} className="mt-3 block">
-                          <Button variant="outline" size="sm" className="w-full bg-transparent">
-                            Reschedule
-                          </Button>
-                        </Link>
-                      )}
                     </CardContent>
                   </Card>
                 )
