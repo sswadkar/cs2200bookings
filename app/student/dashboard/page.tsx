@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Calendar, LogOut, Clock, CheckCircle } from "lucide-react"
+import { Calendar, LogOut, Clock, CheckCircle, Lock, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import type { BookingGroup, Booking, Student } from "@/lib/types"
+import { formatDate, formatTime } from "@/lib/utils/date"
 
 export default function StudentDashboardPage() {
   const [student, setStudent] = useState<Student | null>(null)
@@ -32,8 +33,11 @@ export default function StudentDashboardPage() {
   async function loadData(studentId: string) {
     const supabase = createClient()
 
-    // Load published booking groups
-    const { data: groups } = await supabase.from("booking_groups").select("*").eq("status", "published").order("name")
+    const { data: groups } = await supabase
+      .from("booking_groups")
+      .select("*")
+      .in("status", ["published", "locked"])
+      .order("name")
 
     // Load student's bookings
     const { data: bookings } = await supabase
@@ -52,8 +56,8 @@ export default function StudentDashboardPage() {
     router.push("/")
   }
 
-  function hasBookingForGroup(groupId: string): boolean {
-    return myBookings.some((b) => b.booking_group_id === groupId)
+  function getBookingForGroup(groupId: string): Booking | undefined {
+    return myBookings.find((b) => b.booking_group_id === groupId)
   }
 
   if (isLoading || !student) {
@@ -93,29 +97,39 @@ export default function StudentDashboardPage() {
             <p className="mt-4 text-sm text-muted-foreground">You have no bookings yet.</p>
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {myBookings.map((booking) => (
-                <Card key={booking.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{booking.slot?.booking_group?.name || "Demo"}</CardTitle>
-                      <Badge variant="secondary">
-                        <CheckCircle className="mr-1 h-3 w-3" />
-                        Booked
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      <span>
-                        {booking.slot
-                          ? `${new Date(booking.slot.start_time).toLocaleDateString()} at ${new Date(booking.slot.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                          : "Time TBD"}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {myBookings.map((booking) => {
+                const isLocked = booking.slot?.booking_group?.status === "locked"
+                return (
+                  <Card key={booking.id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">{booking.slot?.booking_group?.name || "Demo"}</CardTitle>
+                        <Badge variant={isLocked ? "destructive" : "secondary"} className="gap-1">
+                          {isLocked ? <Lock className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
+                          {isLocked ? "Locked" : "Booked"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {booking.slot
+                            ? `${formatDate(booking.slot.start_time)} at ${formatTime(booking.slot.start_time)}`
+                            : "Time TBD"}
+                        </span>
+                      </div>
+                      {!isLocked && (
+                        <Link href={`/student/book/${booking.slot?.booking_group?.slug}`} className="mt-3 block">
+                          <Button variant="outline" size="sm" className="w-full bg-transparent">
+                            Reschedule
+                          </Button>
+                        </Link>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </section>
@@ -128,18 +142,44 @@ export default function StudentDashboardPage() {
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {bookingGroups.map((group) => {
-                const hasBooked = hasBookingForGroup(group.id)
+                const booking = getBookingForGroup(group.id)
+                const hasBooked = !!booking
+                const isLocked = group.status === "locked"
+
                 return (
                   <Card key={group.id}>
                     <CardHeader>
-                      <CardTitle className="text-base">{group.name}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">{group.name}</CardTitle>
+                        {isLocked && (
+                          <Badge variant="destructive" className="gap-1">
+                            <Lock className="h-3 w-3" />
+                            Locked
+                          </Badge>
+                        )}
+                      </div>
                       {group.description && <CardDescription>{group.description}</CardDescription>}
                     </CardHeader>
                     <CardContent>
                       {hasBooked ? (
-                        <Badge variant="outline" className="w-full justify-center py-2">
-                          Already Booked
-                        </Badge>
+                        <div className="space-y-2">
+                          <Badge variant="outline" className="w-full justify-center gap-1 py-2">
+                            <CheckCircle className="h-3 w-3" />
+                            Already Booked
+                          </Badge>
+                          {!isLocked && (
+                            <Link href={`/student/book/${group.slug}`}>
+                              <Button variant="ghost" size="sm" className="w-full">
+                                View / Reschedule
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
+                      ) : isLocked ? (
+                        <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-center">
+                          <AlertTriangle className="mx-auto h-5 w-5 text-amber-600" />
+                          <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Booking closed - contact TA</p>
+                        </div>
                       ) : (
                         <Link href={`/student/book/${group.slug}`}>
                           <Button className="w-full">View Slots</Button>

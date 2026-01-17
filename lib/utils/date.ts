@@ -130,3 +130,11 @@ export function formatPlainDateShort(dateStr: string): string {
     day: "numeric",
   })
 }
+
+export function formatPlainTime(timeStr: string): string {
+  // timeStr is like "09:00:00" or "14:30:00"
+  const [hours, minutes] = timeStr.split(":").map(Number)
+  const period = hours >= 12 ? "PM" : "AM"
+  const displayHours = hours % 12 || 12
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`
+}

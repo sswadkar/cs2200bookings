@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
+import type { BookingGroupStatus } from "@/lib/types"
 
 interface CreateBookingGroupDialogProps {
   open: boolean
@@ -23,7 +24,7 @@ export function CreateBookingGroupDialog({ open, onOpenChange }: CreateBookingGr
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [slug, setSlug] = useState("")
-  const [status, setStatus] = useState<"hidden" | "published" | "inactive">("hidden")
+  const [status, setStatus] = useState<BookingGroupStatus>("hidden")
   const [taRequiredMinutes, setTaRequiredMinutes] = useState("120")
   const [dateRangeStart, setDateRangeStart] = useState("")
   const [dateRangeEnd, setDateRangeEnd] = useState("")
@@ -128,13 +129,14 @@ export function CreateBookingGroupDialog({ open, onOpenChange }: CreateBookingGr
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as "hidden" | "published" | "inactive")}>
+                <Select value={status} onValueChange={(v) => setStatus(v as BookingGroupStatus)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hidden">Hidden (TAs only)</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="published">Published (Students can book)</SelectItem>
+                    <SelectItem value="locked">Locked (No changes allowed)</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>

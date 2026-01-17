@@ -1,13 +1,7 @@
-import Link from "next/link";
-import { Calendar, Users, GraduationCap, Shield, UserCog } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link"
+import { Calendar, Users, GraduationCap, Shield, UserCog } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function HomePage() {
   return (
@@ -16,9 +10,7 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-6 w-6 text-primary" />
-            <span className="text-xl font-semibold text-foreground">
-              CS 2200 Bookings
-            </span>
+            <span className="text-xl font-semibold text-foreground">CS 2200 Bookings</span>
           </div>
         </div>
       </header>
@@ -29,8 +21,7 @@ export default function HomePage() {
             Demo Booking Platform
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground">
-            Students can book demo slots, TAs can manage their availability, and
-            Admins can oversee everything.
+            Students can book demo slots, TAs can manage their availability, and Admins can oversee everything.
           </p>
         </section>
 
@@ -41,9 +32,7 @@ export default function HomePage() {
                 <GraduationCap className="h-6 w-6 text-blue-500" />
               </div>
               <CardTitle className="mt-4">Student</CardTitle>
-              <CardDescription>
-                View available demo slots and book your session.
-              </CardDescription>
+              <CardDescription>View available demo slots and book your session.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/student/login">
@@ -60,9 +49,7 @@ export default function HomePage() {
                 <UserCog className="h-6 w-6 text-emerald-500" />
               </div>
               <CardTitle className="mt-4">Teaching Assistant</CardTitle>
-              <CardDescription>
-                Manage your demo slots and fulfill hour requirements.
-              </CardDescription>
+              <CardDescription>Manage your demo slots and fulfill hour requirements.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/ta/login">
@@ -79,9 +66,7 @@ export default function HomePage() {
                 <Shield className="h-6 w-6 text-amber-500" />
               </div>
               <CardTitle className="mt-4">Administrator</CardTitle>
-              <CardDescription>
-                Manage booking groups, TAs, and students.
-              </CardDescription>
+              <CardDescription>Manage booking groups, TAs, and students.</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/admin/login">
@@ -92,7 +77,33 @@ export default function HomePage() {
             </CardContent>
           </Card>
         </section>
+
+        <section className="mt-16 rounded-lg border border-border bg-muted/50 p-8">
+          <div className="flex items-start gap-4">
+            <Users className="mt-1 h-6 w-6 text-muted-foreground" />
+            <div>
+              <h3 className="font-semibold text-foreground">How it works</h3>
+              <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <strong>Admins</strong> create booking groups and configure TA hour requirements.
+                </li>
+                <li>
+                  <strong>TAs</strong> add their available demo slots to fulfill their requirements.
+                </li>
+                <li>
+                  <strong>Students</strong> browse published slots and book one per booking group.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="mt-auto border-t border-border">
+        <div className="mx-auto max-w-6xl px-4 py-8 text-center text-sm text-muted-foreground">
+          <p>CS 2200 Bookings - Demo Booking Platform</p>
+        </div>
+      </footer>
     </div>
-  );
+  )
 }

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
 import type { TA, BookingGroup, BookingSlot, Student } from "@/lib/types"
-import { formatDate, formatTime } from "@/lib/utils/date"
+import { formatDate, formatTime, formatPlainDate, formatPlainTime } from "@/lib/utils/date"
 
 interface GroupWithProgress extends BookingGroup {
   my_minutes: number
@@ -61,7 +61,7 @@ export function TADashboardClient() {
     const { data: groupsData } = await supabase
       .from("booking_groups")
       .select("*")
-      .in("status", ["hidden", "published"])
+      .in("status", ["hidden", "published", "locked"])
       .order("created_at", { ascending: false })
 
     // For each group, get TA's slots and calculate minutes
@@ -174,7 +174,9 @@ export function TADashboardClient() {
                                     ? "secondary"
                                     : group.status === "published"
                                       ? "default"
-                                      : "outline"
+                                      : group.status === "locked"
+                                        ? "destructive"
+                                        : "outline"
                                 }
                               >
                                 {group.status}
@@ -192,7 +194,7 @@ export function TADashboardClient() {
                               </Button>
                             </Link>
                           )}
-                          {group.status === "published" && (
+                          {(group.status === "published" || group.status === "locked") && (
                             <Link href={`/ta/groups/${group.id}/slots`}>
                               <Button variant="outline">
                                 <Users className="mr-2 h-4 w-4" />
@@ -227,8 +229,8 @@ export function TADashboardClient() {
                         {group.date_range_start && group.date_range_end && (
                           <p className="mb-4 text-sm text-muted-foreground">
                             <Clock className="mr-2 inline-block h-4 w-4" />
-                            {formatDate(group.date_range_start)} - {formatDate(group.date_range_end)},{" "}
-                            {group.daily_start_time?.slice(0, 5)} - {group.daily_end_time?.slice(0, 5)}
+                            {formatPlainDate(group.date_range_start)} - {formatPlainDate(group.date_range_end)},{" "}
+                            {formatPlainTime(group.daily_start_time)} - {formatPlainTime(group.daily_end_time)}
                           </p>
                         )}
 
