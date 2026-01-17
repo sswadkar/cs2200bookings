@@ -63,7 +63,7 @@ export function AdminLoginForm() {
   if (emailSent) {
     return (
       <Card className="border-border">
-        <CardContent className="pt-6">
+        <CardContent>
           <div className="flex flex-col items-center justify-center space-y-4 py-8 text-center">
             <div className="rounded-full bg-green-100 p-3">
               <CheckCircle className="h-8 w-8 text-green-600" />
@@ -93,7 +93,7 @@ export function AdminLoginForm() {
   return (
     <Card className="border-border">
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-2 pt-6">
+        <CardContent className="space-y-2">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
