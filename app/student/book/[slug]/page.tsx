@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { Calendar, ArrowLeft, Clock, User, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, ArrowLeft, Clock, User, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +31,7 @@ export default function StudentBookingPage() {
   const [bookingSlotId, setBookingSlotId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [isCanceling, setIsCanceling] = useState(false)
 
   useEffect(() => {
     const session = localStorage.getItem("student_session")
@@ -47,12 +48,11 @@ export default function StudentBookingPage() {
   async function loadData(studentId: string) {
     const supabase = createClient()
 
-    // Load booking group
     const { data: group } = await supabase
       .from("booking_groups")
       .select("*")
       .eq("slug", slug)
-      .eq("status", "published")
+      .in("status", ["published", "locked"])
       .single()
 
     if (!group) {
@@ -62,7 +62,6 @@ export default function StudentBookingPage() {
 
     setBookingGroup(group)
 
-    // Check if student already has a booking for this group
     const { data: existing } = await supabase
       .from("bookings")
       .select("*, slot:booking_slots(*)")
@@ -72,39 +71,39 @@ export default function StudentBookingPage() {
 
     if (existing) {
       setExistingBooking(existing)
-      setIsLoading(false)
-      return
+      if (group.status === "locked") {
+        setIsLoading(false)
+        return
+      }
     }
 
-    // Load available slots with booking counts
-    const { data: slotsData } = await supabase
-      .from("booking_slots")
-      .select("*, ta:tas(name)")
-      .eq("booking_group_id", group.id)
-      .gte("start_time", new Date().toISOString())
-      .order("start_time")
+    if (group.status === "published") {
+      const { data: slotsData } = await supabase
+        .from("booking_slots")
+        .select("*, ta:tas(name)")
+        .eq("booking_group_id", group.id)
+        .gte("start_time", new Date().toISOString())
+        .order("start_time")
 
-    // Get booking counts for each slot
-    const slotsWithCounts = await Promise.all(
-      (slotsData || []).map(async (slot) => {
-        const { count } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact", head: true })
-          .eq("booking_slot_id", slot.id)
+      const slotsWithCounts = await Promise.all(
+        (slotsData || []).map(async (slot) => {
+          const { count } = await supabase
+            .from("bookings")
+            .select("*", { count: "exact", head: true })
+            .eq("booking_slot_id", slot.id)
 
-        return { ...slot, bookings_count: count || 0 }
-      }),
-    )
+          return { ...slot, bookings_count: count || 0 }
+        }),
+      )
 
-    // Filter to only show slots with available capacity
-    const availableSlots = slotsWithCounts.filter((s) => s.bookings_count < s.capacity)
-    setSlots(availableSlots)
+      const availableSlots = slotsWithCounts.filter((s) => s.bookings_count < s.capacity)
+      setSlots(availableSlots)
 
-    // Set initial selected date to first available slot date
-    if (availableSlots.length > 0) {
-      const firstSlotDate = new Date(availableSlots[0].start_time)
-      setSelectedDate(firstSlotDate)
-      setCurrentMonth(new Date(firstSlotDate.getFullYear(), firstSlotDate.getMonth(), 1))
+      if (availableSlots.length > 0 && !existing) {
+        const firstSlotDate = new Date(availableSlots[0].start_time)
+        setSelectedDate(firstSlotDate)
+        setCurrentMonth(new Date(firstSlotDate.getFullYear(), firstSlotDate.getMonth(), 1))
+      }
     }
 
     setIsLoading(false)
@@ -134,7 +133,6 @@ export default function StudentBookingPage() {
     setBookingSlotId(slotId)
     const supabase = createClient()
 
-    // Use atomic database function to prevent race conditions
     const { data, error } = await supabase.rpc("create_booking_atomic", {
       p_booking_slot_id: slotId,
       p_booking_group_id: bookingGroup.id,
@@ -156,13 +154,11 @@ export default function StudentBookingPage() {
         toast.error("Already booked", {
           description: result.message,
         })
-        // Reload to show existing booking
         loadData(student.id)
       } else if (result.error === "SLOT_FULL") {
         toast.error("Slot full", {
           description: result.message,
         })
-        // Reload to refresh slot availability
         loadData(student.id)
       } else {
         toast.error("Booking failed", {
@@ -178,6 +174,35 @@ export default function StudentBookingPage() {
     })
 
     router.push("/student/dashboard")
+  }
+
+  async function handleCancelBooking() {
+    if (!student || !existingBooking || !bookingGroup) return
+
+    if (bookingGroup.status === "locked") {
+      toast.error("Cannot cancel booking", {
+        description: "This booking group is locked. Contact a TA for assistance.",
+      })
+      return
+    }
+
+    setIsCanceling(true)
+    const supabase = createClient()
+
+    const { error } = await supabase.from("bookings").delete().eq("id", existingBooking.id)
+
+    if (error) {
+      toast.error("Failed to cancel booking")
+      setIsCanceling(false)
+      return
+    }
+
+    toast.success("Booking canceled", {
+      description: "You can now select a new time slot.",
+    })
+    setExistingBooking(null)
+    setIsCanceling(false)
+    loadData(student.id)
   }
 
   function navigateMonth(direction: "prev" | "next") {
@@ -201,6 +226,8 @@ export default function StudentBookingPage() {
   }
 
   if (existingBooking) {
+    const isLocked = bookingGroup?.status === "locked"
+
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b border-border">
@@ -215,9 +242,9 @@ export default function StudentBookingPage() {
         <main className="mx-auto max-w-2xl px-4 py-16 text-center">
           <div className="rounded-lg border border-border bg-card p-8">
             <Calendar className="mx-auto h-12 w-12 text-primary" />
-            <h1 className="mt-4 text-2xl font-bold text-foreground">Already Booked</h1>
+            <h1 className="mt-4 text-2xl font-bold text-foreground">Your Booking</h1>
             <p className="mt-4 text-muted-foreground">
-              You already have a booking for <span className="font-medium">{bookingGroup?.name}</span>.
+              You have a booking for <span className="font-medium">{bookingGroup?.name}</span>.
             </p>
             {existingBooking.slot && (
               <div className="mt-4 rounded-lg bg-muted p-4">
@@ -227,8 +254,58 @@ export default function StudentBookingPage() {
                 </p>
               </div>
             )}
-            <p className="mt-4 text-sm text-muted-foreground">
-              If you need to change your slot, please contact a TA to delete your existing booking first.
+
+            {isLocked ? (
+              <div className="mt-6 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-5 w-5" />
+                  <p className="text-sm font-medium">Bookings are now locked</p>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You can no longer change your booking. Contact a TA if you need assistance.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Need to reschedule? You can cancel and select a new time.
+                </p>
+                <Button variant="outline" onClick={handleCancelBooking} disabled={isCanceling}>
+                  {isCanceling ? "Canceling..." : "Cancel & Reschedule"}
+                </Button>
+              </div>
+            )}
+
+            <Link href="/student/dashboard">
+              <Button className="mt-6">Back to Dashboard</Button>
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (bookingGroup?.status === "locked") {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-primary" />
+              <span className="text-xl font-semibold text-foreground">CS 2200 Bookings</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-2xl px-4 py-16 text-center">
+          <div className="rounded-lg border border-border bg-card p-8">
+            <AlertTriangle className="mx-auto h-12 w-12 text-amber-500" />
+            <h1 className="mt-4 text-2xl font-bold text-foreground">Bookings Closed</h1>
+            <p className="mt-4 text-muted-foreground">
+              Bookings for <span className="font-medium">{bookingGroup?.name}</span> are now locked.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You did not book a demo slot before the deadline. Please contact a TA for assistance.
             </p>
             <Link href="/student/dashboard">
               <Button className="mt-6">Back to Dashboard</Button>
@@ -271,7 +348,6 @@ export default function StudentBookingPage() {
           </Card>
         ) : (
           <div className="mt-8 grid gap-8 lg:grid-cols-2">
-            {/* Calendar */}
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -336,7 +412,6 @@ export default function StudentBookingPage() {
               </CardContent>
             </Card>
 
-            {/* Time Slots for Selected Date */}
             <Card>
               <CardHeader>
                 <CardTitle>

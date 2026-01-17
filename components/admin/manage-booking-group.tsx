@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Search,
   Users,
+  Lock,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import type { Admin, BookingGroup, BookingSlot, Booking, TAWithStats, Student } from "@/lib/types"
 import { CreateSlotDialog } from "./create-slot-dialog"
-import { formatTime, formatDate, formatRelativeTime } from "@/lib/utils/date"
+import { formatRelativeTime, formatPlainDate, formatPlainTime } from "@/lib/utils/date"
 
 interface ManageBookingGroupProps {
   admin: Admin
@@ -73,7 +74,7 @@ export function ManageBookingGroup({
       return
     }
 
-    setStatus(newStatus as "hidden" | "published" | "inactive")
+    setStatus(newStatus as "hidden" | "published" | "locked" | "inactive")
     toast.success(`Status changed to ${newStatus}`)
     router.refresh()
   }
@@ -206,11 +207,11 @@ export function ManageBookingGroup({
             <p className="mt-1 text-muted-foreground">{bookingGroup.description || "No description"}</p>
             {bookingGroup.date_range_start && bookingGroup.date_range_end && (
               <p className="mt-2 text-sm text-muted-foreground">
-                {formatDate(bookingGroup.date_range_start)} - {formatDate(bookingGroup.date_range_end)},{" "}
-                {bookingGroup.daily_start_time?.slice(0, 5)} - {bookingGroup.daily_end_time?.slice(0, 5)}
+                {formatPlainDate(bookingGroup.date_range_start)} - {formatPlainDate(bookingGroup.date_range_end)},{" "}
+                {formatPlainTime(bookingGroup.daily_start_time)} - {formatPlainTime(bookingGroup.daily_end_time)}
               </p>
             )}
-            {status === "published" && (
+            {(status === "published" || status === "locked") && (
               <Link
                 href={`/student/book/${bookingGroup.slug}`}
                 target="_blank"
@@ -232,6 +233,11 @@ export function ManageBookingGroup({
                 <SelectContent>
                   <SelectItem value="hidden">Hidden</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="locked">
+                    <span className="flex items-center gap-2">
+                      <Lock className="h-3 w-3" /> Locked
+                    </span>
+                  </SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
@@ -242,6 +248,15 @@ export function ManageBookingGroup({
             </Button>
           </div>
         </div>
+
+        {status === "locked" && (
+          <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 text-amber-700 dark:text-amber-400">
+            <Lock className="h-5 w-5 flex-shrink-0" />
+            <p className="text-sm">
+              This booking group is <strong>locked</strong>. Students can no longer book or reschedule their demos.
+            </p>
+          </div>
+        )}
 
         <div className="mb-8 grid gap-4 sm:grid-cols-5">
           <Card>
@@ -342,9 +357,9 @@ export function ManageBookingGroup({
                           className="flex items-center justify-between rounded-lg border border-border p-4"
                         >
                           <div>
-                            <p className="font-medium text-foreground">{formatDate(slot.start_time)}</p>
+                            <p className="font-medium text-foreground">{formatPlainDate(slot.start_time)}</p>
                             <p className="text-sm text-muted-foreground">
-                              {formatTime(slot.start_time)} - {formatTime(slot.end_time)}
+                              {formatPlainTime(slot.start_time)} - {formatPlainTime(slot.end_time)}
                             </p>
                             <p className="mt-1 text-xs text-muted-foreground">
                               {currentBookings} / {slot.capacity} booked
@@ -381,7 +396,7 @@ export function ManageBookingGroup({
                         >
                           <div>
                             <p className="text-sm text-foreground">
-                              {formatDate(slot.start_time)} at {formatTime(slot.start_time)}
+                              {formatPlainDate(slot.start_time)} at {formatPlainTime(slot.start_time)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               {currentBookings} bookings{slot.ta && ` • TA: ${slot.ta.name}`}
@@ -434,7 +449,8 @@ export function ManageBookingGroup({
                           <p className="font-medium text-foreground">{booking.student?.name}</p>
                           <p className="text-sm text-muted-foreground">{booking.student?.email}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {formatDate(booking.slot?.start_time || "")} at {formatTime(booking.slot?.start_time || "")}
+                            {formatPlainDate(booking.slot?.start_time || "")} at{" "}
+                            {formatPlainTime(booking.slot?.start_time || "")}
                             {booking.booked_at && ` • Booked ${formatRelativeTime(booking.booked_at)}`}
                           </p>
                         </div>
@@ -508,7 +524,7 @@ export function ManageBookingGroup({
                               </Badge>
                               {studentBooking?.slot && (
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  {formatDate(studentBooking.slot.start_time)}
+                                  {formatPlainDate(studentBooking.slot.start_time)}
                                 </p>
                               )}
                             </div>

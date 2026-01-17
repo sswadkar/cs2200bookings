@@ -21,7 +21,7 @@ export interface Student {
   created_at: string
 }
 
-export type BookingGroupStatus = "hidden" | "published" | "inactive"
+export type BookingGroupStatus = "hidden" | "published" | "locked" | "inactive"
 
 export interface BookingGroup {
   id: string
