@@ -219,12 +219,13 @@ export default function StudentBookingPage() {
     setIsCanceling(true);
     const supabase = createClient();
 
-    const { error } = await supabase
-      .from("bookings")
-      .delete()
-      .eq("id", existingBooking.id);
+    const { error } = await supabase.rpc("cancel_booking_atomic", {
+      p_booking_id: existingBooking.id,
+      p_student_id: student.id,
+    });
 
     if (error) {
+      console.error(error);
       toast.error("Failed to cancel booking");
       setIsCanceling(false);
       return;
@@ -233,9 +234,15 @@ export default function StudentBookingPage() {
     toast.success("Booking canceled", {
       description: "You can now select a new time slot.",
     });
+
+    // Authoritative state update
     setExistingBooking(null);
+    setSelectedDate(null);
+    setSlots([]);
+
     setIsCanceling(false);
-    loadData(student.id);
+    await loadData(student.id);
+
   }
 
   function navigateMonth(direction: "prev" | "next") {
